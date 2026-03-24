@@ -4,17 +4,17 @@
 // ✅ 所有瀏覽器即時更新
 // ✅ 重整後資料不消失
 // ✅ Feature 拖曳功能
+// ✅ Feature 超連結欄位
 // ✅ 日期時間選擇器
 // ✅ 唯讀模式 + 密碼保護
 // ✅ Telegram 通知功能
 // ================================
 
 import { useState, useRef, useEffect } from "react";
-import { motion, Reorder } from "framer-motion";
+import { Reorder } from "framer-motion";
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, onSnapshot, setDoc } from "firebase/firestore";
 
-// Firebase 設定
 const firebaseConfig = {
   apiKey: "AIzaSyCH4x5i7O0s44LnfHb6inNtrC5LC36NB7I",
   authDomain: "sprint-kanban.firebaseapp.com",
@@ -81,6 +81,8 @@ const inputStyle = {
   fontFamily: "inherit",
   transition: "border-color 0.2s, box-shadow 0.2s",
   outline: "none",
+  width: "100%",
+  boxSizing: "border-box",
 };
 
 const inputFocusStyle = {
@@ -114,8 +116,8 @@ const initialSprints = [
     maintenanceEnd: "",
     notes: "",
     items: [
-      { id: "f1", title: "Login Flow", type: "Main" },
-      { id: "f2", title: "Token Refresh", type: "Optimize" },
+      { id: "f1", title: "Login Flow", type: "Main", url: "" },
+      { id: "f2", title: "Token Refresh", type: "Optimize", url: "" },
     ],
   },
 ];
@@ -131,18 +133,13 @@ export default function SprintKanban({
   const [draggingItemId, setDraggingItemId] = useState(null);
   const [dragOverSprintId, setDragOverSprintId] = useState(null);
   const [newSprint, setNewSprint] = useState({
-    name: "",
-    uatDate: "",
-    prodDate: "",
-    maintenanceStart: "",
-    maintenanceEnd: "",
-    notes: ""
+    name: "", uatDate: "", prodDate: "",
+    maintenanceStart: "", maintenanceEnd: "", notes: ""
   });
-  const [newItem, setNewItem] = useState({ title: "", type: "Main" });
+  const [newItem, setNewItem] = useState({ title: "", type: "Main", url: "" });
   const [readOnly, setReadOnly] = useState(readOnlyProp);
   const [isMobile, setIsMobile] = useState(false);
 
-  // 用來避免自己的更新觸發 onSnapshot 回寫
   const isLocalUpdate = useRef(false);
 
   useEffect(() => {
@@ -152,7 +149,6 @@ export default function SprintKanban({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // 監聽 Firestore 即時同步
   useEffect(() => {
     const unsubscribe = onSnapshot(KANBAN_DOC, (snapshot) => {
       if (isLocalUpdate.current) {
@@ -160,10 +156,8 @@ export default function SprintKanban({
         return;
       }
       if (snapshot.exists()) {
-        const data = snapshot.data();
-        setSprints(data.sprints || []);
+        setSprints(snapshot.data().sprints || []);
       } else {
-        // 文件不存在，寫入初始資料
         saveToFirestore(initialSprints);
         setSprints(initialSprints);
       }
@@ -172,11 +166,9 @@ export default function SprintKanban({
       console.error("Firestore 監聽失敗:", error);
       setLoading(false);
     });
-
     return () => unsubscribe();
   }, []);
 
-  // 儲存到 Firestore
   const saveToFirestore = async (data) => {
     try {
       await setDoc(KANBAN_DOC, { sprints: data });
@@ -186,7 +178,6 @@ export default function SprintKanban({
     }
   };
 
-  // 每次 sprints 改變時同步到 Firestore
   const updateSprints = (newSprints) => {
     isLocalUpdate.current = true;
     setSprints(newSprints);
@@ -208,35 +199,17 @@ export default function SprintKanban({
     }
   };
 
-  const toDatetimeLocal = (dateStr) => {
-    if (!dateStr) return "";
-    return dateStr.replace(" ", "T");
-  };
-
-  const fromDatetimeLocal = (dateStr) => {
-    if (!dateStr) return "";
-    return dateStr.replace("T", " ");
-  };
+  const toDatetimeLocal = (dateStr) => dateStr ? dateStr.replace(" ", "T") : "";
+  const fromDatetimeLocal = (dateStr) => dateStr ? dateStr.replace("T", " ") : "";
 
   const addSprint = () => {
     if (!newSprint.name) return;
-    const updated = [...sprints, {
-      id: uid(),
-      name: newSprint.name,
-      uatDate: newSprint.uatDate,
-      prodDate: newSprint.prodDate,
-      maintenanceStart: newSprint.maintenanceStart,
-      maintenanceEnd: newSprint.maintenanceEnd,
-      notes: newSprint.notes,
-      items: []
-    }];
-    updateSprints(updated);
+    updateSprints([...sprints, { id: uid(), ...newSprint, items: [] }]);
     setNewSprint({ name: "", uatDate: "", prodDate: "", maintenanceStart: "", maintenanceEnd: "", notes: "" });
   };
 
   const updateSprint = (id, field, value) => {
-    const updated = sprints.map(s => s.id === id ? { ...s, [field]: value } : s);
-    updateSprints(updated);
+    updateSprints(sprints.map(s => s.id === id ? { ...s, [field]: value } : s));
   };
 
   const deleteSprint = (id) => {
@@ -247,44 +220,39 @@ export default function SprintKanban({
 
   const addItem = (sprintId) => {
     if (!newItem.title) return;
-    const updated = sprints.map(s =>
+    updateSprints(sprints.map(s =>
       s.id === sprintId ? { ...s, items: [...s.items, { id: uid(), ...newItem }] } : s
-    );
-    updateSprints(updated);
-    setNewItem({ title: "", type: "Main" });
+    ));
+    setNewItem({ title: "", type: "Main", url: "" });
   };
 
   const moveItem = (fromId, toId, item) => {
-    const updated = sprints.map(s => {
+    updateSprints(sprints.map(s => {
       if (s.id === fromId) return { ...s, items: s.items.filter(i => i.id !== item.id) };
       if (s.id === toId) return { ...s, items: [...s.items, item] };
       return s;
-    });
-    updateSprints(updated);
+    }));
   };
 
   const reorderItems = (sprintId, newOrderedItems) => {
-    const updated = sprints.map(s =>
+    updateSprints(sprints.map(s =>
       s.id === sprintId ? { ...s, items: newOrderedItems } : s
-    );
-    updateSprints(updated);
+    ));
   };
 
   const updateItem = (sprintId, itemId, field, value) => {
-    const updated = sprints.map(s =>
+    updateSprints(sprints.map(s =>
       s.id === sprintId
         ? { ...s, items: s.items.map(i => i.id === itemId ? { ...i, [field]: value } : i) }
         : s
-    );
-    updateSprints(updated);
+    ));
   };
 
   const deleteItem = (sprintId, itemId) => {
     if (confirm('確定要刪除這個 Feature 嗎？')) {
-      const updated = sprints.map(s =>
+      updateSprints(sprints.map(s =>
         s.id === sprintId ? { ...s, items: s.items.filter(i => i.id !== itemId) } : s
-      );
-      updateSprints(updated);
+      ));
     }
   };
 
@@ -292,51 +260,46 @@ export default function SprintKanban({
     const date = env === "UAT" ? sprint.uatDate : sprint.prodDate;
     const features = sprint.items.map(item => `  • ${item.title} (${item.type})`).join('\n');
     const message = `🎉 <b>${sprint.name}（${env}）已上版</b>\n\n📅 時間：${date}\n📦 功能數量：${sprint.items.length}\n\n<b>功能清單：</b>\n${features || '  無'}`;
-
     try {
-      const promises = TELEGRAM_CHAT_IDS.map(chatId =>
-        fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: "HTML" }),
-        }).then(res => res.json())
+      const results = await Promise.all(
+        TELEGRAM_CHAT_IDS.map(chatId =>
+          fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: "HTML" }),
+          }).then(res => res.json())
+        )
       );
-      const results = await Promise.all(promises);
       const successCount = results.filter(r => r.ok).length;
       const failCount = results.length - successCount;
-      if (successCount > 0) {
-        alert(`✅ Telegram 通知已送出到 ${successCount} 個群組${failCount > 0 ? `（${failCount} 個失敗）` : ''}`);
-      } else {
-        alert('❌ 所有群組發送失敗，請檢查設定');
-      }
-    } catch (error) {
+      successCount > 0
+        ? alert(`✅ Telegram 通知已送出到 ${successCount} 個群組${failCount > 0 ? `（${failCount} 個失敗）` : ''}`)
+        : alert('❌ 所有群組發送失敗，請檢查設定');
+    } catch {
       alert("❌ 發送失敗，請檢查網路連線");
     }
   };
 
   const notifyProdReminder = async (sprint) => {
     const maintenanceTime = sprint.maintenanceStart && sprint.maintenanceEnd
-      ? `${sprint.maintenanceStart} ~ ${sprint.maintenanceEnd}`
-      : '未設定';
+      ? `${sprint.maintenanceStart} ~ ${sprint.maintenanceEnd}` : '未設定';
     const message = `⚠️ <b>${sprint.name} (Prod) 上版提醒</b>\n\n📅 時間：${sprint.prodDate || '未設定'}\n🔧 維運時間：${maintenanceTime}\n📝 注意事項：${sprint.notes || '無'}`;
-
     try {
-      const promises = TELEGRAM_CHAT_IDS.map(chatId =>
-        fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: "HTML" }),
-        }).then(res => res.json())
+      const results = await Promise.all(
+        TELEGRAM_CHAT_IDS.map(chatId =>
+          fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: "HTML" }),
+          }).then(res => res.json())
+        )
       );
-      const results = await Promise.all(promises);
       const successCount = results.filter(r => r.ok).length;
       const failCount = results.length - successCount;
-      if (successCount > 0) {
-        alert(`✅ Prod 上版提醒已送出到 ${successCount} 個群組${failCount > 0 ? `（${failCount} 個失敗）` : ''}`);
-      } else {
-        alert('❌ 所有群組發送失敗，請檢查設定');
-      }
-    } catch (error) {
+      successCount > 0
+        ? alert(`✅ Prod 上版提醒已送出到 ${successCount} 個群組${failCount > 0 ? `（${failCount} 個失敗）` : ''}`)
+        : alert('❌ 所有群組發送失敗，請檢查設定');
+    } catch {
       alert("❌ 發送失敗，請檢查網路連線");
     }
   };
@@ -346,18 +309,16 @@ export default function SprintKanban({
   const dragOverSprintIdRef = useRef(null);
 
   const handleDragStart = (sprintId, itemId) => {
-    const dragKey = `${sprintId}-${itemId}`;
-    setDraggingItemId(dragKey);
+    setDraggingItemId(`${sprintId}-${itemId}`);
     isDraggingRef.current = true;
-
     const handleMouseMove = (e) => {
       if (!isDraggingRef.current) return;
       let foundSprintId = null;
-      for (const [sprintIdKey, dropZoneElement] of Object.entries(sprintDropZonesRef.current)) {
-        if (!dropZoneElement) continue;
-        const rect = dropZoneElement.getBoundingClientRect();
+      for (const [key, el] of Object.entries(sprintDropZonesRef.current)) {
+        if (!el) continue;
+        const rect = el.getBoundingClientRect();
         if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
-          foundSprintId = sprintIdKey;
+          foundSprintId = key;
           break;
         }
       }
@@ -369,7 +330,6 @@ export default function SprintKanban({
         setDragOverSprintId(null);
       }
     };
-
     document.addEventListener('mousemove', handleMouseMove);
     window._dragMouseMoveHandler = handleMouseMove;
   };
@@ -381,9 +341,7 @@ export default function SprintKanban({
     }
     isDraggingRef.current = false;
     const targetSprintId = dragOverSprintIdRef.current;
-    if (targetSprintId && targetSprintId !== fromSprintId) {
-      moveItem(fromSprintId, targetSprintId, item);
-    }
+    if (targetSprintId && targetSprintId !== fromSprintId) moveItem(fromSprintId, targetSprintId, item);
     dragOverSprintIdRef.current = null;
     setDraggingItemId(null);
     setDragOverSprintId(null);
@@ -402,43 +360,26 @@ export default function SprintKanban({
 
   return (
     <div style={{ padding: isMobile ? '16px' : '36px', minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
-      <div style={{
-        display: 'flex',
-        flexDirection: isMobile ? 'column' : 'row',
-        justifyContent: 'space-between',
-        alignItems: isMobile ? 'flex-start' : 'center',
-        marginBottom: '24px',
-        gap: isMobile ? '12px' : '0'
-      }}>
+
+      {/* Header */}
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', marginBottom: '24px', gap: isMobile ? '12px' : '0' }}>
         <h1 style={{ fontSize: isMobile ? '24px' : '34px', fontWeight: '700', margin: 0, color: '#1f2937' }}>Sprint Kanban</h1>
-        <div style={{
-          display: 'flex',
-          flexDirection: isMobile ? 'column' : 'row',
-          alignItems: isMobile ? 'stretch' : 'center',
-          gap: '12px',
-          width: isMobile ? '100%' : 'auto'
-        }}>
+        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', gap: '12px', width: isMobile ? '100%' : 'auto' }}>
           {readOnly && (
             <span style={{ fontSize: '14px', fontWeight: '600', color: '#dc2626', backgroundColor: '#fee2e2', padding: '6px 12px', borderRadius: '6px', textAlign: 'center' }}>
               🔒 唯讀模式
             </span>
           )}
-          <button
-            style={{ ...buttonStyle, backgroundColor: readOnly ? '#16a34a' : '#dc2626', marginRight: 0, width: isMobile ? '100%' : 'auto' }}
-            onClick={handleToggleEditMode}
-          >
+          <button style={{ ...buttonStyle, backgroundColor: readOnly ? '#16a34a' : '#dc2626', marginRight: 0, width: isMobile ? '100%' : 'auto' }} onClick={handleToggleEditMode}>
             {readOnly ? '🔓 切換到編輯模式' : '🔒 切換到唯讀模式'}
           </button>
           {!readOnly && (
-            <button
-              style={{ ...dangerButtonStyle, marginRight: 0, width: isMobile ? '100%' : 'auto' }}
-              onClick={() => {
-                if (confirm('⚠️ 確定要清除所有資料嗎？此操作無法復原！')) {
-                  updateSprints(initialSprints);
-                  alert('✅ 已清除所有資料並重置為初始狀態');
-                }
-              }}
-            >
+            <button style={{ ...dangerButtonStyle, marginRight: 0, width: isMobile ? '100%' : 'auto' }} onClick={() => {
+              if (confirm('⚠️ 確定要清除所有資料嗎？此操作無法復原！')) {
+                updateSprints(initialSprints);
+                alert('✅ 已清除所有資料並重置為初始狀態');
+              }
+            }}>
               🗑️ 清除所有資料
             </button>
           )}
@@ -470,10 +411,10 @@ export default function SprintKanban({
                 />
               </div>
             ))}
-            <div style={{ flex: '1 1 100%', minWidth: '200px' }}>
+            <div style={{ flex: '1 1 100%' }}>
               <label style={{ display: 'block', fontSize: '12px', fontWeight: '500', color: '#6b7280', marginBottom: '4px' }}>備註</label>
               <textarea
-                style={{ ...inputStyle, minHeight: '60px', resize: 'vertical', width: '100%', boxSizing: 'border-box' }}
+                style={{ ...inputStyle, minHeight: '60px', resize: 'vertical' }}
                 placeholder="注意事項..."
                 value={newSprint.notes}
                 onChange={e => setNewSprint({ ...newSprint, notes: e.target.value })}
@@ -487,13 +428,7 @@ export default function SprintKanban({
       )}
 
       {/* Sprints */}
-      <div style={{
-        display: 'flex',
-        flexDirection: isMobile ? 'column' : 'row',
-        gap: '24px',
-        overflowX: isMobile ? 'visible' : 'auto',
-        paddingBottom: '24px'
-      }}>
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '24px', overflowX: isMobile ? 'visible' : 'auto', paddingBottom: '24px' }}>
         {sprints.map((sprint) => (
           <div
             key={sprint.id}
@@ -515,7 +450,7 @@ export default function SprintKanban({
                     <label style={{ fontSize: '12px', fontWeight: '500', color: '#6b7280' }}>{label}</label>
                     <input
                       type={type}
-                      style={{ ...inputStyle, width: '100%', boxSizing: 'border-box', marginTop: '4px' }}
+                      style={{ ...inputStyle, marginTop: '4px' }}
                       value={type === 'datetime-local' ? toDatetimeLocal(sprint[field]) : sprint[field]}
                       onChange={e => updateSprint(sprint.id, field, type === 'datetime-local' ? fromDatetimeLocal(e.target.value) : e.target.value)}
                       onFocus={e => Object.assign(e.target.style, inputFocusStyle)}
@@ -525,7 +460,7 @@ export default function SprintKanban({
                 ))}
                 <label style={{ fontSize: '12px', fontWeight: '500', color: '#6b7280' }}>備註</label>
                 <textarea
-                  style={{ ...inputStyle, minHeight: '80px', resize: 'vertical', width: '100%', boxSizing: 'border-box' }}
+                  style={{ ...inputStyle, minHeight: '80px', resize: 'vertical' }}
                   value={sprint.notes || ''}
                   onChange={e => updateSprint(sprint.id, "notes", e.target.value)}
                   onFocus={e => Object.assign(e.target.style, inputFocusStyle)}
@@ -538,9 +473,7 @@ export default function SprintKanban({
                 <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '4px' }}>📅 UAT: {sprint.uatDate || '未設定'}</div>
                 <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '4px' }}>🚀 Prod: {sprint.prodDate || '未設定'}</div>
                 {sprint.maintenanceStart && sprint.maintenanceEnd && (
-                  <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '4px' }}>
-                    🔧 維運: {sprint.maintenanceStart} ~ {sprint.maintenanceEnd}
-                  </div>
+                  <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '4px' }}>🔧 維運: {sprint.maintenanceStart} ~ {sprint.maintenanceEnd}</div>
                 )}
                 {sprint.notes && (
                   <div style={{ fontSize: '14px', color: '#6b7280', marginTop: '8px', padding: '8px', backgroundColor: '#f9fafb', borderRadius: '6px', wordWrap: 'break-word', overflowWrap: 'break-word', whiteSpace: 'pre-wrap', maxHeight: '120px', overflowY: 'auto' }}>
@@ -595,6 +528,14 @@ export default function SprintKanban({
                     >
                       {FEATURE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
+                    <input
+                      style={inputStyle}
+                      placeholder="連結網址（選填）"
+                      value={newItem.url}
+                      onChange={e => setNewItem({ ...newItem, url: e.target.value })}
+                      onFocus={e => Object.assign(e.target.style, inputFocusStyle)}
+                      onBlur={e => { e.target.style.borderColor = '#d1d5db'; e.target.style.boxShadow = 'none'; }}
+                    />
                     <button style={buttonStyle} onClick={() => addItem(sprint.id)}>+ 新增 Feature</button>
                   </div>
                 </div>
@@ -610,11 +551,7 @@ export default function SprintKanban({
               {sprint.items.length === 0 ? (
                 <div
                   ref={(el) => { if (el) sprintDropZonesRef.current[sprint.id] = el; else delete sprintDropZonesRef.current[sprint.id]; }}
-                  style={{
-                    display: 'flex', flexDirection: 'column', gap: '10px', minHeight: '60px',
-                    padding: dragOverSprintId === sprint.id ? '8px' : '0',
-                    ...(dragOverSprintId === sprint.id ? dropZoneActiveStyle : {}),
-                  }}
+                  style={{ display: 'flex', flexDirection: 'column', gap: '10px', minHeight: '60px', padding: dragOverSprintId === sprint.id ? '8px' : '0', ...(dragOverSprintId === sprint.id ? dropZoneActiveStyle : {}) }}
                 >
                   <div style={{ padding: '20px', textAlign: 'center', color: dragOverSprintId === sprint.id ? '#1d4ed8' : '#9ca3af', fontSize: '14px', fontWeight: dragOverSprintId === sprint.id ? '600' : '400' }}>
                     {dragOverSprintId === sprint.id ? '⬇️ 放開以移動 Feature' : '尚無 Features'}
@@ -672,15 +609,36 @@ export default function SprintKanban({
                             >
                               {FEATURE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                             </select>
+                            <input
+                              style={inputStyle}
+                              placeholder="連結網址（選填）"
+                              value={item.url || ""}
+                              onChange={e => updateItem(sprint.id, item.id, "url", e.target.value)}
+                              onFocus={e => Object.assign(e.target.style, inputFocusStyle)}
+                              onBlur={e => { e.target.style.borderColor = '#d1d5db'; e.target.style.boxShadow = 'none'; }}
+                            />
                             <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
                               <button style={buttonStyle} onClick={() => setEditingItemId(null)}>儲存</button>
                               <button style={secondaryButtonStyle} onClick={() => setEditingItemId(null)}>取消</button>
                             </div>
                           </div>
                         ) : (
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <div style={{ flex: 1 }}>
-                              <div style={{ fontWeight: '600', fontSize: '15px', color: '#1f2937', marginBottom: '4px' }}>{item.title}</div>
+                              <div style={{ fontWeight: '600', fontSize: '15px', color: '#1f2937', marginBottom: '4px' }}>
+                                {item.url ? (
+                                  <a
+                                    href={item.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ color: '#1d4ed8', textDecoration: 'underline', cursor: 'pointer' }}
+                                  >
+                                    {item.title}
+                                  </a>
+                                ) : (
+                                  item.title
+                                )}
+                              </div>
                               <div style={{
                                 fontSize: '12px', display: 'inline-block', padding: '2px 8px', borderRadius: '4px',
                                 backgroundColor: item.type === 'Main' ? '#dbeafe' : item.type === 'Optimize' ? '#fef3c7' : item.type === 'Bug' ? '#fee2e2' : '#f3e8ff',
