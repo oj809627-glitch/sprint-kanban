@@ -362,29 +362,40 @@ export default function SprintKanban({
     <div style={{ padding: isMobile ? '16px' : '36px', minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
 
       {/* Header */}
-      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', marginBottom: '24px', gap: isMobile ? '12px' : '0' }}>
-        <h1 style={{ fontSize: isMobile ? '24px' : '34px', fontWeight: '700', margin: 0, color: '#1f2937' }}>Sprint Kanban</h1>
-        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', gap: '12px', width: isMobile ? '100%' : 'auto' }}>
-          {readOnly && (
-            <span style={{ fontSize: '14px', fontWeight: '600', color: '#dc2626', backgroundColor: '#fee2e2', padding: '6px 12px', borderRadius: '6px', textAlign: 'center' }}>
-              🔒 唯讀模式
-            </span>
-          )}
-          <button style={{ ...buttonStyle, backgroundColor: readOnly ? '#16a34a' : '#dc2626', marginRight: 0, width: isMobile ? '100%' : 'auto' }} onClick={handleToggleEditMode}>
-            {readOnly ? '🔓 切換到編輯模式' : '🔒 切換到唯讀模式'}
-          </button>
-          {!readOnly && (
-            <button style={{ ...dangerButtonStyle, marginRight: 0, width: isMobile ? '100%' : 'auto' }} onClick={() => {
-              if (confirm('⚠️ 確定要清除所有資料嗎？此操作無法復原！')) {
-                updateSprints(initialSprints);
-                alert('✅ 已清除所有資料並重置為初始狀態');
-              }
-            }}>
-              🗑️ 清除所有資料
-            </button>
-          )}
-        </div>
-      </div>
+<div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', marginBottom: '24px', gap: isMobile ? '12px' : '0' }}>
+  <h1 style={{ fontSize: isMobile ? '24px' : '34px', fontWeight: '700', margin: 0, color: '#1f2937' }}>Sprint Kanban</h1>
+  <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', gap: '12px', width: isMobile ? '100%' : 'auto' }}>
+    {readOnly && (
+      <span style={{ fontSize: '14px', fontWeight: '600', color: '#dc2626', backgroundColor: '#fee2e2', padding: '6px 12px', borderRadius: '6px', textAlign: 'center' }}>
+        🔒 唯讀模式
+      </span>
+    )}
+    <button style={{ ...buttonStyle, backgroundColor: readOnly ? '#16a34a' : '#dc2626', marginRight: 0, width: isMobile ? '100%' : 'auto' }} onClick={handleToggleEditMode}>
+      {readOnly ? '🔓 切換到編輯模式' : '🔒 切換到唯讀模式'}
+    </button>
+    {!readOnly && (
+      <>
+        <button
+          style={{ ...buttonStyle, backgroundColor: '#7c3aed', marginRight: 0, width: isMobile ? '100%' : 'auto' }}
+          onClick={() => window.open('https://jira-webhook-rose.vercel.app/tracker', '_blank')}
+        >
+          📊 Jira 追蹤
+        </button>
+        <button
+          style={{ ...dangerButtonStyle, marginRight: 0, width: isMobile ? '100%' : 'auto' }}
+          onClick={() => {
+            if (confirm('⚠️ 確定要清除所有資料嗎？此操作無法復原！')) {
+              updateSprints(initialSprints);
+              alert('✅ 已清除所有資料並重置為初始狀態');
+            }
+          }}
+        >
+          🗑️ 清除所有資料
+        </button>
+      </>
+    )}
+  </div>
+</div>
 
       {/* Add Sprint */}
       {!readOnly && (
