@@ -370,38 +370,38 @@ export default function SprintKanban({
         🔒 唯讀模式
       </span>
     )}
-    <button style={{ ...buttonStyle, backgroundColor: readOnly ? '#16a34a' : '#dc2626', marginRight: 0, width: isMobile ? '100%' : 'auto' }} onClick={handleToggleEditMode}>
-      {readOnly ? '🔓 切換到編輯模式' : '🔒 切換到唯讀模式'}
+<button style={{ ...buttonStyle, backgroundColor: readOnly ? '#16a34a' : '#dc2626', marginRight: 0, width: isMobile ? '100%' : 'auto' }} onClick={handleToggleEditMode}>
+  {readOnly ? '🔓 切換到編輯模式' : '🔒 切換到唯讀模式'}
+</button>
+<button
+  style={{ ...buttonStyle, backgroundColor: '#0891b2', marginRight: 0, width: isMobile ? '100%' : 'auto' }}
+  onClick={() => window.open('https://jira-webhook-rose.vercel.app/calendar', '_blank')}
+>
+  📅 行事曆
+</button>
+{!readOnly && (
+  <>
+    <button
+      style={{ ...buttonStyle, backgroundColor: '#7c3aed', marginRight: 0, width: isMobile ? '100%' : 'auto' }}
+      onClick={() => window.open('https://jira-webhook-rose.vercel.app/tracker', '_blank')}
+    >
+      📊 Jira 追蹤
     </button>
-    {!readOnly && (
-      <>
-        <button
-          style={{ ...buttonStyle, backgroundColor: '#7c3aed', marginRight: 0, width: isMobile ? '100%' : 'auto' }}
-          onClick={() => window.open('https://jira-webhook-rose.vercel.app/tracker', '_blank')}
-        >
-          📊 Jira 追蹤
-        </button>
-        <button
-          style={{ ...buttonStyle, backgroundColor: '#0891b2', marginRight: 0, width: isMobile ? '100%' : 'auto' }}
-          onClick={() => window.open('https://jira-webhook-rose.vercel.app/calendar', '_blank')}
-        >
-          📅 行事曆
-        </button>
-        <button
-          style={{ ...dangerButtonStyle, marginRight: 0, width: isMobile ? '100%' : 'auto' }}
-          onClick={() => {
-            if (confirm('⚠️ 確定要清除所有資料嗎？此操作無法復原！')) {
-              updateSprints(initialSprints);
-              alert('✅ 已清除所有資料並重置為初始狀態');
-            }
-          }}
-        >
-          🗑️ 清除所有資料
-        </button>
-      </>
-    )}
-  </div>
+    <button
+      style={{ ...dangerButtonStyle, marginRight: 0, width: isMobile ? '100%' : 'auto' }}
+      onClick={() => {
+        if (confirm('⚠️ 確定要清除所有資料嗎？此操作無法復原！')) {
+          updateSprints(initialSprints);
+          alert('✅ 已清除所有資料並重置為初始狀態');
+        }
+      }}
+    >
+      🗑️ 清除所有資料
+    </button>
+  </>
+)}
 </div>
+</div>iv>
 
       {/* Add Sprint */}
       {!readOnly && (
