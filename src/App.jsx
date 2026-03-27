@@ -361,7 +361,7 @@ export default function SprintKanban({
   return (
     <div style={{ padding: isMobile ? '16px' : '36px', minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
 
-      {/* Header */}
+{/* Header */}
 <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', marginBottom: '24px', gap: isMobile ? '12px' : '0' }}>
   <h1 style={{ fontSize: isMobile ? '24px' : '34px', fontWeight: '700', margin: 0, color: '#1f2937' }}>Sprint Kanban</h1>
   <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', gap: '12px', width: isMobile ? '100%' : 'auto' }}>
@@ -380,6 +380,12 @@ export default function SprintKanban({
           onClick={() => window.open('https://jira-webhook-rose.vercel.app/tracker', '_blank')}
         >
           📊 Jira 追蹤
+        </button>
+        <button
+          style={{ ...buttonStyle, backgroundColor: '#0891b2', marginRight: 0, width: isMobile ? '100%' : 'auto' }}
+          onClick={() => window.open('https://jira-webhook-rose.vercel.app/calendar', '_blank')}
+        >
+          📅 行事曆
         </button>
         <button
           style={{ ...dangerButtonStyle, marginRight: 0, width: isMobile ? '100%' : 'auto' }}
