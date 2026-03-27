@@ -363,46 +363,47 @@ export default function SprintKanban({
 
 {/* Header */}
 <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', marginBottom: '24px', gap: isMobile ? '12px' : '0' }}>
-  <h1 style={{ fontSize: isMobile ? '24px' : '34px', fontWeight: '700', margin: 0, color: '#1f2937' }}>Sprint Kanban</h1>
+  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+    <h1 style={{ fontSize: isMobile ? '24px' : '34px', fontWeight: '700', margin: 0, color: '#1f2937' }}>Sprint Kanban</h1>
+    <button
+      style={{ ...buttonStyle, backgroundColor: '#0891b2', marginRight: 0 }}
+      onClick={() => window.open('https://jira-webhook-rose.vercel.app/calendar', '_blank')}
+    >
+      📅 行事曆
+    </button>
+  </div>
   <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', gap: '12px', width: isMobile ? '100%' : 'auto' }}>
     {readOnly && (
       <span style={{ fontSize: '14px', fontWeight: '600', color: '#dc2626', backgroundColor: '#fee2e2', padding: '6px 12px', borderRadius: '6px', textAlign: 'center' }}>
         🔒 唯讀模式
       </span>
     )}
-<button style={{ ...buttonStyle, backgroundColor: readOnly ? '#16a34a' : '#dc2626', marginRight: 0, width: isMobile ? '100%' : 'auto' }} onClick={handleToggleEditMode}>
-  {readOnly ? '🔓 切換到編輯模式' : '🔒 切換到唯讀模式'}
-</button>
-<button
-  style={{ ...buttonStyle, backgroundColor: '#0891b2', marginRight: 0, width: isMobile ? '100%' : 'auto' }}
-  onClick={() => window.open('https://jira-webhook-rose.vercel.app/calendar', '_blank')}
->
-  📅 行事曆
-</button>
-{!readOnly && (
-  <>
-    <button
-      style={{ ...buttonStyle, backgroundColor: '#7c3aed', marginRight: 0, width: isMobile ? '100%' : 'auto' }}
-      onClick={() => window.open('https://jira-webhook-rose.vercel.app/tracker', '_blank')}
-    >
-      📊 Jira 追蹤
+    <button style={{ ...buttonStyle, backgroundColor: readOnly ? '#16a34a' : '#dc2626', marginRight: 0, width: isMobile ? '100%' : 'auto' }} onClick={handleToggleEditMode}>
+      {readOnly ? '🔓 切換到編輯模式' : '🔒 切換到唯讀模式'}
     </button>
-    <button
-      style={{ ...dangerButtonStyle, marginRight: 0, width: isMobile ? '100%' : 'auto' }}
-      onClick={() => {
-        if (confirm('⚠️ 確定要清除所有資料嗎？此操作無法復原！')) {
-          updateSprints(initialSprints);
-          alert('✅ 已清除所有資料並重置為初始狀態');
-        }
-      }}
-    >
-      🗑️ 清除所有資料
-    </button>
-  </>
-)}
+    {!readOnly && (
+      <>
+        <button
+          style={{ ...buttonStyle, backgroundColor: '#7c3aed', marginRight: 0, width: isMobile ? '100%' : 'auto' }}
+          onClick={() => window.open('https://jira-webhook-rose.vercel.app/tracker', '_blank')}
+        >
+          📊 Jira 追蹤
+        </button>
+        <button
+          style={{ ...dangerButtonStyle, marginRight: 0, width: isMobile ? '100%' : 'auto' }}
+          onClick={() => {
+            if (confirm('⚠️ 確定要清除所有資料嗎？此操作無法復原！')) {
+              updateSprints(initialSprints);
+              alert('✅ 已清除所有資料並重置為初始狀態');
+            }
+          }}
+        >
+          🗑️ 清除所有資料
+        </button>
+      </>
+    )}
+  </div>
 </div>
-</div>iv>
-
       {/* Add Sprint */}
       {!readOnly && (
         <div style={{ marginBottom: '32px', padding: '20px', backgroundColor: '#ffffff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
