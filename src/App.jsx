@@ -11,7 +11,7 @@
 // ================================
 
 import { useState, useRef, useEffect } from "react";
-import { Reorder } from "framer-motion";
+import { Reorder, useDragControls } from "framer-motion";
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, onSnapshot, setDoc } from "firebase/firestore";
 
@@ -131,6 +131,7 @@ export default function SprintKanban({
   const [editingSprintId, setEditingSprintId] = useState(null);
   const [editingItemId, setEditingItemId] = useState(null);
   const [draggingItemId, setDraggingItemId] = useState(null);
+  const [draggingSprintId, setDraggingSprintId] = useState(null);
   const [dragOverSprintId, setDragOverSprintId] = useState(null);
   const [newSprint, setNewSprint] = useState({
     name: "", uatDate: "", prodDate: "",
@@ -238,6 +239,10 @@ export default function SprintKanban({
     updateSprints(sprints.map(s =>
       s.id === sprintId ? { ...s, items: newOrderedItems } : s
     ));
+  };
+
+  const reorderSprints = (newOrderedSprints) => {
+    updateSprints(newOrderedSprints);
   };
 
   const updateItem = (sprintId, itemId, field, value) => {
@@ -446,14 +451,36 @@ export default function SprintKanban({
       )}
 
       {/* Sprints */}
-      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '24px', overflowX: isMobile ? 'visible' : 'auto', paddingBottom: '24px' }}>
+      <Reorder.Group
+        axis={isMobile ? "y" : "x"}
+        values={sprints}
+        onReorder={(newOrder) => !readOnly && reorderSprints(newOrder)}
+        style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '24px', overflowX: isMobile ? 'visible' : 'auto', paddingBottom: '24px', listStyle: 'none', margin: 0, padding: '0 0 24px 0' }}
+      >
         {sprints.map((sprint) => (
-          <div
+          <Reorder.Item
             key={sprint.id}
-            style={isMobile ? mobileCardStyle : cardStyle}
-            onMouseEnter={e => !isMobile && (e.currentTarget.style.transform = 'scale(1.03)')}
-            onMouseLeave={e => !isMobile && (e.currentTarget.style.transform = 'scale(1)')}
+            value={sprint}
+            drag={!readOnly}
+            dragListener={!readOnly}
+            onDragStart={() => !readOnly && setDraggingSprintId(sprint.id)}
+            onDragEnd={() => setDraggingSprintId(null)}
+            style={{
+              ...(isMobile ? mobileCardStyle : cardStyle),
+              cursor: readOnly ? 'default' : (draggingSprintId === sprint.id ? 'grabbing' : 'grab'),
+              boxShadow: draggingSprintId === sprint.id ? '0 16px 40px rgba(0,0,0,0.25)' : '0 8px 24px rgba(0,0,0,0.15)',
+              opacity: draggingSprintId === sprint.id ? 0.85 : 1,
+              zIndex: draggingSprintId === sprint.id ? 1000 : 1,
+            }}
           >
+            {/* Drag Handle */}
+            {!readOnly && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px', color: '#9ca3af', fontSize: '13px', userSelect: 'none' }}>
+                <span style={{ fontSize: '16px', letterSpacing: '2px' }}>⠿⠿</span>
+                <span>拖曳排序</span>
+              </div>
+            )}
+
             {/* Sprint Header */}
             {editingSprintId === sprint.id ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -679,9 +706,9 @@ export default function SprintKanban({
                 </Reorder.Group>
               )}
             </div>
-          </div>
+          </Reorder.Item>
         ))}
-      </div>
+      </Reorder.Group>
     </div>
   );
 }
